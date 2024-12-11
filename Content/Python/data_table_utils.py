@@ -35,6 +35,16 @@ def str_to_text(val:str)->tuple[bool, str]:
     if match and len(match.groups())>0:
         return (True, match.group(1))
     else:
+        # 处理为string table引用的情况
+        # LOCTABLE("/FSK/DataTable/FSStringTable.FSStringTable", "FX-Ttitle")
+        match2 = re.search('LOCTABLE\("([^\"]+)", "([^\"]+)"\)', val)
+        if match2:
+            tbl = match2.group(1)
+            key = match2.group(2)
+            s = unreal.StringTableLibrary.get_table_entry_source_string(tbl, key)
+            if s == "" or s.strip() == "":
+                return (False, "")
+            return (True, s)
         return (False, "")
     
 def str_to_enum_name(val:str)->tuple[bool, str]:
@@ -117,7 +127,6 @@ def str_to_data_table_handle_array(val:str)->tuple[bool, list[unreal.DataTableRo
     
     handle_array : list[unreal.DataTableRowHandle] = []
     for line in lines:
-        unreal.log(f"line in array: {line}")
         success, handle = str_to_data_table_handle(line)
         if not success:
             return (False, [])
@@ -149,7 +158,7 @@ def str_to_prop_array(val:str)->tuple[bool, dict[str,str]]:
         elif char == ',':
             if wait_close == 0:
                 idx = line.find('=') # 以第一个等号分割为键值对
-                if idx>0 and idx < len(line)-2:
+                if idx>0 and idx < len(line):
                     ret[line[0:idx].strip()] = line[idx+1:].strip()
                     line = ""
                 else:
@@ -163,7 +172,7 @@ def str_to_prop_array(val:str)->tuple[bool, dict[str,str]]:
     line = line.strip()
     if len(line)>0:
         idx = line.find('=') # 以第一个等号分割为键值对
-        if idx>0 and idx < len(line)-2:
+        if idx>0 and idx < len(line):
             ret[line[0:idx].strip()] = line[idx+1:].strip()
             line = ""
         else:
